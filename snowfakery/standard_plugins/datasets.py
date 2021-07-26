@@ -63,11 +63,7 @@ class DatasetIteratorBase(PluginResultIterator):
     """
 
     def next(self):
-        try:
-            return next(self.results)
-        except StopIteration:
-            self.restart()
-            return next(self.results)
+        return next(self.results)
 
     def start(self):
         "Initialize the iterator in self.results."

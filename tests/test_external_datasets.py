@@ -239,3 +239,31 @@ class TestExternalDatasets:
             generate(StringIO(yaml), {})
 
         assert "multiple tables in it" in str(e.value)
+
+    def test_dataset_as_template_iterator(self, generated_rows):
+        with open("examples/datasets/dataset-as-iterator.recipe.yml") as f:
+            generate(f)
+        assert generated_rows.table_values("Person", 1) == {
+            "id": 1,
+            "City": "Burnaby",
+            "StreetAddress": "420 Kings Ave",
+            "Name": "Bob Loblaw",
+        }
+        assert generated_rows.table_values("Person", 2) == {
+            "id": 2,
+            "City": "White Rock",
+            "StreetAddress": "421 Granville Street",
+            "Name": "Bob Loblaw",
+        }
+        assert generated_rows.table_values("Person", 3) == {
+            "id": 3,
+            "City": "Richmond",
+            "StreetAddress": "422 Kingsway Road",
+            "Name": "Bob Loblaw",
+        }
+        assert generated_rows.table_values("Person", 4) == {
+            "id": 4,
+            "City": "Burnaby",
+            "StreetAddress": "420 Kings Ave",
+            "Name": "Bob Loblaw",
+        }

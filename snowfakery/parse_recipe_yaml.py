@@ -15,6 +15,7 @@ from yaml.error import YAMLError
 from .data_generator_runtime_object_model import (
     ObjectTemplate,
     VariableDefinition,
+    ForEachVariableDefinition,
     FieldFactory,
     SimpleValue,
     StructuredValue,
@@ -253,10 +254,6 @@ def parse_friends(friends: List, context: ParseContext) -> List[Statement]:
     return parse_statement_list(friends, context)
 
 
-def parse_count_expression(yaml_sobj: Dict, sobj_def: Dict, context: ParseContext):
-    sobj_def["count_expr"] = parse_field_value("count", yaml_sobj["count"], context)
-
-
 def include_macro(
     name: str, context: ParseContext, parent_macros=()
 ) -> Tuple[List[FieldFactory], List[TemplateLike]]:
@@ -327,6 +324,7 @@ def parse_object_template(yaml_sobj: Dict, context: ParseContext) -> ObjectTempl
             "include": str,
             "nickname": str,
             "just_once": bool,
+            "for_each": (list, dict),
             "count": (str, int, dict),
         },
         context=context,
@@ -355,7 +353,22 @@ def parse_object_template(yaml_sobj: Dict, context: ParseContext) -> ObjectTempl
         count_expr = yaml_sobj.get("count")
 
         if count_expr is not None:
-            parse_count_expression(yaml_sobj, sobj_def, context)
+            sobj_def["count_expr"] = parse_field_value(
+                "count", yaml_sobj["count"], context
+            )
+
+        for_each_exprs = yaml_sobj.get("for_each")
+        if for_each_exprs is not None:
+            if isinstance(for_each_exprs, dict):
+                for_each_exprs = [for_each_exprs]
+            if isinstance(for_each_exprs, list):
+                sobj_def["for_each_exprs"] = [
+                    parse_for_each_variable_definition(expr, context)
+                    for expr in for_each_exprs
+                ]
+            else:
+                assert 0  # TODO
+
         new_template = ObjectTemplate(**sobj_def)
         context.register_template(new_template)
         return new_template
@@ -384,6 +397,32 @@ def parse_variable_definition(
         sobj_def["line_num"] = parsed_template.line_num.line_num
         sobj_def["filename"] = parsed_template.line_num.filename
         new_def = VariableDefinition(**sobj_def)
+        return new_def
+
+
+def parse_for_each_variable_definition(
+    yaml_sobj: Dict, context: ParseContext
+) -> ForEachVariableDefinition:
+    parsed_template: Any = parse_element(
+        yaml_sobj,
+        "var",
+        optional_keys={},
+        mandatory_keys={
+            "value": (dict,),
+        },
+        context=context,
+    )
+
+    assert yaml_sobj
+    with context.change_current_parent_object(yaml_sobj):
+        sobj_def = {}
+        sobj_def["varname"] = parsed_template.var
+        var_def_expr = yaml_sobj.get("value")
+
+        sobj_def["expression"] = parse_field_value("value", var_def_expr, context)
+        sobj_def["line_num"] = parsed_template.line_num.line_num
+        sobj_def["filename"] = parsed_template.line_num.filename
+        new_def = ForEachVariableDefinition(**sobj_def)
         return new_def
 
 

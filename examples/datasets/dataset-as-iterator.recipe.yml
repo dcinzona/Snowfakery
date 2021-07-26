@@ -1,0 +1,14 @@
+- plugin: snowfakery.standard_plugins.datasets.Dataset
+- object: Foo
+  count: 2
+  friends:
+    - object: Person
+      for_each:
+        var: current_address
+        value:
+          Dataset.iterate:
+            dataset: addresses.csv
+      fields:
+        Name: Bob Loblaw
+        StreetAddress: ${{current_address.Number}} ${{current_address.Street}}
+        City: ${{current_address.City}}

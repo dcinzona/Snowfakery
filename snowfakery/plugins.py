@@ -262,20 +262,24 @@ class PluginResult:
 
     def __getattr__(self, name):
         # ensures that it won't recurse
-        return self.__dict__["result"][name]
+        return self.__dict__.get("result", {})[name]
 
     def __reduce__(self):
         return (self.__class__, (dict(self.result),))
 
     def __repr__(self):
-        return f"<{self.__class__} {repr(self.result)}>"
+        return f"<{self.__class__} {repr(self.__dict__.get('result', {}))}>"
 
     def __str__(self):
-        return str(self.result)
+        return repr(self)
 
 
 class PluginResultIterator(PluginResult):
-    pass
+    def __next__(self):
+        return self.next()
+
+    def __iter__(self):
+        return self
 
 
 class PluginOption:
